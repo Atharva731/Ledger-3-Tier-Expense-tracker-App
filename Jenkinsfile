@@ -1,3 +1,4 @@
+```groovy
 pipeline {
     agent any
 
@@ -23,12 +24,10 @@ pipeline {
 
         stage('Build and Run') {
             steps {
-                withCredentials([
-                    string(
-                        credentialsId: 'expense-db-password',
-                        variable: 'DB_PASSWORD'
-                    )
-                ]) {
+                withCredentials([string(
+                    credentialsId: 'expense-db-password',
+                    variable: 'DB_PASSWORD'
+                )]) {
                     sh 'docker compose up -d --build'
                 }
             }
@@ -36,7 +35,12 @@ pipeline {
 
         stage('Check Application') {
             steps {
-                sh 'docker compose ps'
+                withCredentials([string(
+                    credentialsId: 'expense-db-password',
+                    variable: 'DB_PASSWORD'
+                )]) {
+                    sh 'docker compose ps'
+                }
             }
         }
     }
@@ -47,7 +51,8 @@ pipeline {
         }
 
         failure {
-            echo 'Pipeline failed. Check the console output.'
+            echo 'Pipeline failed!'
         }
     }
 }
+```
