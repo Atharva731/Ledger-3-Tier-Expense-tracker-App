@@ -1,22 +1,7 @@
 pipeline {
     agent any
 
-    environment {
-        COMPOSE_ENV_CRED = 'expense-db-password'
-    }
-
-    options {
-        timestamps()
-        disableConcurrentBuilds()
-    }
-
     stages {
-
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
 
         stage('Install Dependencies') {
             steps {
@@ -26,7 +11,7 @@ pipeline {
             }
         }
 
-        stage('Syntax / Sanity Check') {
+        stage('Syntax Check') {
             steps {
                 dir('backend') {
                     sh 'node --check server.js'
@@ -36,46 +21,26 @@ pipeline {
             }
         }
 
-        stage('Build & Deploy') {
+        stage('Build and Run') {
             steps {
-                withCredentials([string(
-                    credentialsId: COMPOSE_ENV_CRED,
-                    variable: 'DB_PASSWORD'
-                )]) {
-                    sh '''
-                        export DB_PASSWORD="$DB_PASSWORD"
-
-                        docker compose down || true
-
-                        docker compose up -d --build
-                    '''
-                }
+                sh 'docker compose up -d --build'
             }
         }
 
-        stage('Health Check') {
+        stage('Check Application') {
             steps {
-                sh '''
-                    sleep 8
-
-                    curl -f http://localhost:4000/api/expenses || \
-                    (echo "Health check failed" && exit 1)
-                '''
+                sh 'curl -f http://localhost:4000/api/expenses'
             }
         }
     }
 
     post {
-        always {
-            sh 'docker system prune -f || true'
-        }
-
         success {
-            echo 'Expense Tracker deployed successfully.'
+            echo 'Expense Tracker deployed successfully!'
         }
 
         failure {
-            echo 'Pipeline failed — check the stage logs above.'
+            echo 'Pipeline failed. Check the console output.'
         }
     }
 }
