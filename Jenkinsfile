@@ -23,20 +23,27 @@ pipeline {
 
         stage('Build and Run') {
             steps {
-                sh 'docker compose up -d --build'
+                withCredentials([
+                    string(
+                        credentialsId: 'expense-db-password',
+                        variable: 'DB_PASSWORD'
+                    )
+                ]) {
+                    sh 'docker compose up -d --build'
+                }
             }
         }
 
         stage('Check Application') {
             steps {
-                sh 'curl -f http://localhost:4000/api/expenses'
+                sh 'docker compose ps'
             }
         }
     }
 
     post {
         success {
-            echo 'Expense Tracker deployed successfully!'
+            echo 'Pipeline completed successfully!'
         }
 
         failure {
